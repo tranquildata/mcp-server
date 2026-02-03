@@ -1,0 +1,1 @@
+This project contains the MCP Server endopints for use with the Tranquil Data (TM) Agent Hub. It is implemented in Python3 with [mcp-use](https://github.com/mcp-use/mcp-use).
