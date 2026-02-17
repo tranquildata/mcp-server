@@ -127,7 +127,7 @@ def get_variables() -> list[Variable]:
     consent. The get_variables() function returns all possible variables that can be constrained.
 
     Each Variable returned from this function represents a single variable that can be constrained in
-    a call to get_record_identifiers_from_variables().
+    a call to get_records_for_purpose().
 
     The description field is optional, but if it is present then it may contain lists explaining
     valid values or uses for the variable.
@@ -140,45 +140,52 @@ def get_variables() -> list[Variable]:
         return variables
     response.raise_for_status()
 
-@mcp.tool(description="returns record identifiers valid for the purpose expressed by constraining one or more variables returned from get_variables()")
-def get_record_identifiers_from_variables(
-        constraints: list[VariableConstraint] = Field(description="list of constraints describing the requested set of record identifiers"),
-) -> list[str]:
-    """
-    This function accepts one or more VariableConstraints and returns a list of unique record identifiers. The variable
-    field of each VariableConstraint must be a Variable returned by get_variables(). The value constrains the return of this
-    function to include only record identifiers that are valid for the purpose expressed when the Variable has the give value.
-    """
-    requestBody: list[dict[str, str]] = []
-    for constraint in constraints:
-        requestBody.append({"name": constraint.variable.name, "obligation": constraint.variable.obligation, "category": constraint.variable.category, "value": constraint.value})
-    response = requests.put(root_url + "identifiers", json=requestBody)
-    if response.status_code == 200:
-        identifiers : list[str] = []
-        for identifier in response.json():
-            identifiers.append(identifier)
-        return identifiers
-    response.raise_for_status()
+#@mcp.tool(description="returns record identifiers valid for the purpose expressed by constraining one or more variables returned from get_variables()")
+#def get_record_identifiers_from_variables(
+#        constraints: list[VariableConstraint] = Field(description="list of constraints describing the requested set of record identifiers"),
+#) -> list[str]:
+#    """
+#    This function accepts one or more VariableConstraints and returns a list of unique record identifiers. The variable
+#    field of each VariableConstraint must be a Variable returned by get_variables(). The value constrains the return of this
+#    function to include only record identifiers that are valid for the purpose expressed when the Variable has the give value.
+#    """
+#    requestBody: list[dict[str, str]] = []
+#    for constraint in constraints:
+#        requestBody.append({"name": constraint.variable.name, "obligation": constraint.variable.obligation, "category": constraint.variable.category, "value": constraint.value})
+#    response = requests.put(root_url + "identifiers", json=requestBody)
+#    if response.status_code == 200:
+#        identifiers : list[str] = []
+#        for identifier in response.json():
+#            identifiers.append(identifier)
+#        return identifiers
+#    response.raise_for_status()
 
-@mcp.tool(description="""accepts an arbitrary SQL query over the tables from get_table_names() and one or more
+@mcp.tool(description="""accepts an arbitrary SQL query over the tables from get_table_names() and a list of
           variable constraints using the variables from get_variables(), and returns JSON-structured output.""")
 def get_records_for_purpose(
         query: str = Field(description="""A SQL query over the structure returned by get_table_names() and
                            get_column_names_from_table() that is structured to return multiple individual records or
                            one record containing some aggregate values. Both return JSON-encoded records."""),
-        constraints: list[VariableConstraint] = Field(description="""A list of constraints useing variables returned from
+        constraints: list[VariableConstraint] = Field(description="""A list of constraints using variables returned from
                                                       get_variables() that ensures the record(s) used and/or returned are
-                                                      all valid for the constrained purpose."""),
+                                                      all valid for the constrained purpose.""")
 ) -> list[str]:
     """
-    This function accepts an arbitrary SQL query over the described structure, usimg only the records valid for
-    the constrained purpose, and returns one or more JSON documents represnting the structure of each row that the
-    SQL query returns. If the query is an aggregation of some form then a single document is returned, and no records
-    that are invlaid for the purpose will have been used in that operation. Otherwise, one or more documents are
-    returned and all of the documents represent records that are valid for the puporse (i.e., all of their record
-    identifiers would be present in a call to get_record_identifiers_from_variables() with the same variables).
+    This function accepts an arbitrary SQL query over the described structure and a list of constraints, and returns one or 
+    more JSON documents representing the structure of each row that the SQL query returns. The variable
+    field of each VariableConstraint must be a Variable returned by get_variables(). The value constrains the return of this
+    function to include only record identifiers that are valid for the purpose expressed when the Variable has the given value.
+    If the query is an aggregation of some form then a single document is returned, and no records
+    that are invalid for the purpose will have been used in that operation. Otherwise, one or more documents are
+    returned and all of the documents represent records that are valid for the purpose.
     """
-    response = requests.put(root_url + "records", data=query)
+    requestBody: dict = {
+        "query": query,
+        "constraints": []
+    }
+    for constraint in constraints:
+        requestBody["constraints"].append({"name": constraint.variable.name, "obligation": constraint.variable.obligation, "category": constraint.variable.category, "value": constraint.value})
+    response = requests.put(root_url + "records", data=json.dumps(requestBody))
     if response.status_code == 200:
         records : list[str] = []
         for record in response.json():
