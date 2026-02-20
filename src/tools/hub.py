@@ -140,25 +140,25 @@ def get_variables() -> list[Variable]:
         return variables
     response.raise_for_status()
 
-#@mcp.tool(description="returns record identifiers valid for the purpose expressed by constraining one or more variables returned from get_variables()")
-#def get_record_identifiers_from_variables(
-#        constraints: list[VariableConstraint] = Field(description="list of constraints describing the requested set of record identifiers"),
-#) -> list[str]:
-#    """
-#    This function accepts one or more VariableConstraints and returns a list of unique record identifiers. The variable
-#    field of each VariableConstraint must be a Variable returned by get_variables(). The value constrains the return of this
-#    function to include only record identifiers that are valid for the purpose expressed when the Variable has the give value.
-#    """
-#    requestBody: list[dict[str, str]] = []
-#    for constraint in constraints:
-#        requestBody.append({"name": constraint.variable.name, "obligation": constraint.variable.obligation, "category": constraint.variable.category, "value": constraint.value})
-#    response = requests.put(root_url + "identifiers", json=requestBody)
-#    if response.status_code == 200:
-#        identifiers : list[str] = []
-#        for identifier in response.json():
-#            identifiers.append(identifier)
-#        return identifiers
-#    response.raise_for_status()
+@mcp.tool(description="returns record identifiers valid for the purpose expressed by constraining one or more variables returned from get_variables()")
+def get_record_identifiers_from_variables(
+        constraints: list[VariableConstraint] = Field(description="list of constraints describing the requested set of record identifiers"),
+) -> list[str]:
+    """
+    This function accepts one or more VariableConstraints and returns a list of unique record identifiers. The variable
+    field of each VariableConstraint must be a Variable returned by get_variables(). The value constrains the return of this
+    function to include only record identifiers that are valid for the purpose expressed when the Variable has the give value.
+    """
+    requestBody: list[dict[str, str]] = []
+    for constraint in constraints:
+        requestBody.append({"name": constraint.variable.name, "obligation": constraint.variable.obligation, "category": constraint.variable.category, "value": constraint.value})
+    response = requests.put(root_url + "identifiers", json=requestBody)
+    if response.status_code == 200:
+        identifiers : list[str] = []
+        for identifier in response.json():
+            identifiers.append(identifier)
+        return identifiers
+    response.raise_for_status()
 
 @mcp.tool(description="""accepts an arbitrary SQL query over the tables from get_table_names() and a list of
           variable constraints using the variables from get_variables(), and returns JSON-structured output.""")
