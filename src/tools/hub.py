@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 root_url = "http://localhost:8080/"
-schema_url = root_url + "schema/"
 
 mcp = FastMCP("TQD Service")
 
@@ -78,7 +77,7 @@ class VariableConstraint(BaseModel):
 @mcp.tool(description="returns the names of all the tables in the schema")
 def get_table_names() -> list[Element]:
     """Queries the database and returns the name of all tables"""
-    response = requests.get(schema_url + "categories")
+    response = requests.get(root_url + "schema/categories")
     if response.status_code == 200:
         elements: list[Element] = []
         for element in response.json():
@@ -91,7 +90,7 @@ def get_column_names_from_table(
         table_name: str = Field(description="name of a table from the list returned by get_table_names()"),
 ) -> list[Element]:
     """Returns all of the column names for the given table"""
-    response = requests.get(schema_url + "fields", params={"category": table_name})
+    response = requests.get(root_url + "schema/fields", params={"category": table_name})
     if response.status_code == 200:
         elements: list[Element] = []
         for element in response.json():
@@ -152,7 +151,7 @@ def get_record_identifiers_from_variables(
     requestBody: list[dict[str, str]] = []
     for constraint in constraints:
         requestBody.append({"name": constraint.variable.name, "obligation": constraint.variable.obligation, "category": constraint.variable.category, "value": constraint.value})
-    response = requests.put(root_url + "identifiers", json=requestBody)
+    response = requests.put(root_url + "query/ids", json=requestBody)
     if response.status_code == 200:
         identifiers : list[str] = []
         for identifier in response.json():
@@ -185,7 +184,7 @@ def get_records_for_purpose(
     }
     for constraint in constraints:
         requestBody["constraints"].append({"name": constraint.variable.name, "obligation": constraint.variable.obligation, "category": constraint.variable.category, "value": constraint.value})
-    response = requests.put(root_url + "records", data=json.dumps(requestBody))
+    response = requests.put(root_url + "query/records", data=json.dumps(requestBody))
     if response.status_code == 200:
         records : list[str] = []
         for record in response.json():
